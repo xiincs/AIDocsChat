@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能文档问答系统</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px 0;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+        }
+        .tabs {
+            display: flex;
+            background-color: #34495e;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 12px 20px;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-align: center;
+            flex: 1;
+        }
+        .tab:hover {
+            background-color: #2c3e50;
+        }
+        .tab.active {
+            background-color: #1abc9c;
+            color: white;
+        }
+        .content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            flex: 1;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* 聊天界面样式 */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 70vh;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+        }
+        .message.user {
+            justify-content: flex-end;
+        }
+        .message-content {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 18px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        .user .message-content {
+            background-color: #1abc9c;
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+        .assistant .message-content {
+            background-color: #f1f0f0;
+            border-bottom-left-radius: 5px;
+        }
+        .chat-input {
+            display: flex;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+        .chat-input input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #ced4da;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+        }
+        .chat-input button {
+            margin-left: 10px;
+            background-color: #1abc9c;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .chat-input button:hover {
+            background-color: #16a085;
+        }
+        .chat-input button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        /* 文件上传样式 */
+        .upload-area {
+            border: 2px dashed #3498db;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            background-color: #e9ecef;
+        }
+        .upload-area.highlight {
+            background-color: #e3f2fd;
+            border-color: #2196f3;
+        }
+        .upload-icon {
+            font-size: 48px;
+            color: #3498db;
+            margin-bottom: 10px;
+        }
+        .file-input {
+            display: none;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .btn:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        .result-area {
+            margin-top: 30px;
+            display: none;
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .result-header {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .result-text {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .file-info {
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #3498db;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error-message {
+            color: #e74c3c;
+            margin-top: 10px;
+            display: none;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #fdedec;
+        }
+        .footer {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 15px 0;
+            font-size: 14px;
+        }
+        
+        /* 打字效果 */
+        .typing {
+            display: inline-block;
+            position: relative;
+        }
+        .typing::after {
+            content: '▌';
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink {
+            from, to { opacity: 1; }
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <header class="header">
+            <h1>智能文档问答系统</h1>
+        </header>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="chat">聊天问答</div>
+            <div class="tab" data-tab="upload">文档上传</div>
+        </div>
+        
+        <div class="content">
+            <!-- 聊天问答界面 -->
+            <div class="tab-content active" id="chat-tab">
+                <div class="chat-container">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message assistant">
+                            <div class="message-content">
+                                您好！我是AI助手，您可以向我提问关于已上传文档的内容。
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-input">
+                        <input type="text" id="messageInput" placeholder="请输入您的问题..." />
+                        <button id="sendButton">发送</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 文档上传界面 -->
+            <div class="tab-content" id="upload-tab">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📄</div>
+                    <p>拖放PDF文件到此处，或点击选择文件</p>
+                    <input type="file" id="fileInput" class="file-input" accept="application/pdf" />
+                    <button class="btn" id="uploadBtn">选择文件</button>
+                </div>
+                
+                <div class="error-message" id="errorMessage"></div>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>正在处理文件，请稍候...</p>
+                </div>
+                
+                <div class="result-area" id="resultArea">
+                    <div class="result-header">
+                        <h2>提取结果</h2>
+                        <div class="file-info" id="fileInfo"></div>
+                    </div>
+                    <div class="result-text" id="resultText"></div>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="footer">
+            <p>© 2025 智能文档问答系统 - 基于Spring AI构建</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 标签页切换
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // 移除所有活动状态
+                    tabs.forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    
+                    // 设置当前标签为活动状态
+                    tab.classList.add('active');
+                    const tabId = tab.getAttribute('data-tab') + '-tab';
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+            
+            // 聊天功能
+            const chatMessages = document.getElementById('chatMessages');
+            const messageInput = document.getElementById('messageInput');
+            const sendButton = document.getElementById('sendButton');
+            let isWaitingForResponse = false;
+            
+            // 发送消息
+            function sendMessage() {
+                const message = messageInput.value.trim();
+                if (message === '' || isWaitingForResponse) return;
+                
+                // 添加用户消息
+                addMessage('user', message);
+                
+                // 清空输入框并禁用按钮
+                messageInput.value = '';
+                isWaitingForResponse = true;
+                sendButton.disabled = true;
+                
+                // 开始接收AI回复
+                receiveMessage(message);
+            }
+            
+            // 添加消息到聊天界面
+            function addMessage(sender, text) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}`;
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                
+                if (sender === 'assistant' && text === '') {
+                    // 如果是AI回复且内容为空，添加打字动画效果
+                    contentDiv.innerHTML = '<span class="typing"></span>';
+                    contentDiv.id = 'current-response';
+                } else {
+                    contentDiv.textContent = text;
+                }
+                
+                messageDiv.appendChild(contentDiv);
+                chatMessages.appendChild(messageDiv);
+                
+                // 滚动到底部
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+            // 更新当前响应
+            function updateCurrentResponse(text) {
+                const currentResponse = document.getElementById('current-response');
+                if (currentResponse) {
+                    currentResponse.innerHTML = text;
+                }
+            }
+            
+            // 接收AI响应
+            function receiveMessage(userMessage) {
+                // 添加一个空的AI回复消息（带打字动画）
+                addMessage('assistant', '');
+                
+                // 使用EventSource接收流式响应
+                const eventSource = new EventSource(`/api/chat?prompt=${encodeURIComponent(userMessage)}`);
+                let responseText = '';
+                
+                eventSource.onmessage = function(event) {
+                    responseText += event.data;
+                    updateCurrentResponse(responseText);
+                    
+                    // 滚动到底部
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                };
+                
+                eventSource.onerror = function() {
+                    // 关闭事件源
+                    eventSource.close();
+                    
+                    // 恢复按钮状态
+                    isWaitingForResponse = false;
+                    sendButton.disabled = false;
+                    
+                    // 如果响应为空，显示错误消息
+                    if (responseText === '') {
+                        updateCurrentResponse('抱歉，我无法回答这个问题。');
+                    }
+                    
+                    // 移除当前响应的ID和打字动画
+                    const currentResponse = document.getElementById('current-response');
+                    if (currentResponse) {
+                        currentResponse.id = '';
+                        currentResponse.classList.remove('typing');
+                    }
+                };
+            }
+            
+            // 监听发送按钮点击
+            sendButton.addEventListener('click', sendMessage);
+            
+            // 监听输入框回车事件
+            messageInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+            
+            // 文件上传功能
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const loading = document.getElementById('loading');
+            const resultArea = document.getElementById('resultArea');
+            const resultText = document.getElementById('resultText');
+            const fileInfo = document.getElementById('fileInfo');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // 点击上传区域，触发文件选择
+            uploadArea.addEventListener('click', function() {
+                fileInput.click();
+            });
+            
+            // 点击上传按钮，触发文件选择
+            uploadBtn.addEventListener('click', function(e) {
+                e.stopPropagation(); // 防止事件冒泡到uploadArea
+                fileInput.click();
+            });
+            
+            // 监听文件选择变化
+            fileInput.addEventListener('change', function() {
+                if (fileInput.files.length > 0) {
+                    uploadFile(fileInput.files[0]);
+                }
+            });
+            
+            // 拖放相关事件
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight() {
+                uploadArea.classList.add('highlight');
+            }
+            
+            function unhighlight() {
+                uploadArea.classList.remove('highlight');
+            }
+            
+            // 处理拖放的文件
+            uploadArea.addEventListener('drop', function(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length > 0) {
+                    uploadFile(files[0]);
+                }
+            });
+            
+            // 上传文件的函数
+            function uploadFile(file) {
+                // 检查是否为PDF文件
+                if (file.type !== 'application/pdf') {
+                    showError('只支持PDF文件');
+                    return;
+                }
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                // 显示加载中状态
+                loading.style.display = 'block';
+                resultArea.style.display = 'none';
+                errorMessage.style.display = 'none';
+                
+                // 发送请求
+                fetch('/api/pdf/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.message || '文件处理失败');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // 处理成功，显示结果
+                    loading.style.display = 'none';
+                    resultArea.style.display = 'block';
+                    
+                    // 显示文件信息
+                    const fileSize = formatFileSize(data.fileSize);
+                    fileInfo.innerHTML = `
+                        <strong>文件名:</strong> ${data.fileName}<br>
+                        <strong>文件大小:</strong> ${fileSize}<br>
+                        <strong>处理方式:</strong> ${data.processingMethod === 'OCR' ? 'OCR文字识别' : '文本提取'}<br>
+                        <strong>提取文本长度:</strong> ${data.textLength} 字符<br>
+                        <strong>向量化状态:</strong> ${data.vectorized ? '<span style="color:green">已存入向量数据库</span>' : '<span style="color:red">未向量化</span>'}
+                    `;
+                    
+                    // 显示提取的文本
+                    resultText.textContent = data.text;
+                    
+                    // 上传成功后，添加一条系统消息
+                    if (data.vectorized) {
+                        const systemMessage = `文件 "${data.fileName}" 已成功上传并向量化，现在您可以切换到聊天页面提问关于此文档的问题。`;
+                        showSuccessMessage(systemMessage);
+                    }
+                })
+                .catch(error => {
+                    // 处理错误
+                    loading.style.display = 'none';
+                    showError(error.message || '处理文件时出错');
+                });
+            }
+            
+            // 显示上传成功消息
+            function showSuccessMessage(message) {
+                const uploadTab = document.querySelector('.tab[data-tab="upload"]');
+                const chatTab = document.querySelector('.tab[data-tab="chat"]');
+                
+                // 添加系统消息到聊天界面
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message assistant';
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                contentDiv.style.backgroundColor = '#d4edda';
+                contentDiv.style.color = '#155724';
+                contentDiv.textContent = message;
+                
+                messageDiv.appendChild(contentDiv);
+                chatMessages.appendChild(messageDiv);
+                
+                // 3秒后自动切换到聊天标签
+                setTimeout(() => {
+                    chatTab.click();
+                }, 3000);
+            }
+            
+            // 显示错误信息
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+            }
+            
+            // 格式化文件大小
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+        });
+    </script>
+</body>
+</html> 

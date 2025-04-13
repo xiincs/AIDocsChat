@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能文档问答 - 文档上传</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px 0;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+        }
+        .navbar {
+            background-color: #34495e;
+            display: flex;
+            justify-content: center;
+        }
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            padding: 12px 20px;
+            display: inline-block;
+            transition: background-color 0.3s;
+        }
+        .navbar a:hover {
+            background-color: #2c3e50;
+        }
+        .navbar a.active {
+            background-color: #1abc9c;
+        }
+        .content {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+            flex: 1;
+        }
+        .upload-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+        .upload-header {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .upload-header h2 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .upload-area {
+            border: 2px dashed #3498db;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            background-color: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            background-color: #e9ecef;
+        }
+        .upload-area.highlight {
+            background-color: #e3f2fd;
+            border-color: #2196f3;
+        }
+        .upload-icon {
+            font-size: 64px;
+            color: #3498db;
+            margin-bottom: 15px;
+        }
+        .upload-text {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        .file-input {
+            display: none;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .error-message {
+            color: #e74c3c;
+            margin-top: 15px;
+            display: none;
+            padding: 12px;
+            border-radius: 5px;
+            background-color: #fdedec;
+            text-align: center;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 30px 0;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border-left-color: #3498db;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .result-area {
+            margin-top: 30px;
+            display: none;
+        }
+        .result-header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .result-header h3 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .result-text {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+        .file-info {
+            margin-bottom: 20px;
+            font-size: 15px;
+            color: #666;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .success-message {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            text-align: center;
+            display: none;
+        }
+        .action-buttons {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .footer {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 15px 0;
+            font-size: 14px;
+            margin-top: 30px;
+        }
+        /* 特性列表 */
+        .features {
+            margin-top: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        .feature {
+            flex-basis: calc(33.33% - 20px);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .feature-icon {
+            font-size: 36px;
+            color: #3498db;
+            margin-bottom: 15px;
+        }
+        .feature h3 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        @media (max-width: 768px) {
+            .feature {
+                flex-basis: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>智能文档问答系统</h1>
+    </header>
+    
+    <nav class="navbar">
+        <a href="index.html">首页</a>
+        <a href="chat.html">聊天问答</a>
+        <a href="upload.html" class="active">文档上传</a>
+    </nav>
+    
+    <div class="content">
+        <div class="upload-container">
+            <div class="upload-header">
+                <h2>上传PDF文档</h2>
+                <p>上传PDF文档后，系统会自动提取文本并存入向量数据库，然后您可以在聊天界面中提问关于文档的内容。</p>
+            </div>
+            
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📄</div>
+                <p class="upload-text">拖放PDF文件到此处，或点击选择文件</p>
+                <input type="file" id="fileInput" class="file-input" accept="application/pdf" />
+                <button class="btn" id="uploadBtn">选择文件</button>
+            </div>
+            
+            <div class="error-message" id="errorMessage"></div>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>正在处理文件，请稍候...</p>
+                <p>对于大型文件或扫描版PDF，处理可能需要较长时间</p>
+            </div>
+            
+            <div class="success-message" id="successMessage"></div>
+            
+            <div class="result-area" id="resultArea">
+                <div class="result-header">
+                    <h3>处理结果</h3>
+                </div>
+                <div class="file-info" id="fileInfo"></div>
+                <h4>提取的文本预览：</h4>
+                <div class="result-text" id="resultText"></div>
+                
+                <div class="action-buttons">
+                    <button class="btn" id="goToChatBtn" style="background-color: #1abc9c;">前往聊天页面提问</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon">🔍</div>
+                <h3>智能识别PDF类型</h3>
+                <p>系统会自动检测上传的PDF是文本PDF还是扫描版PDF，并选择最合适的处理方式。</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">📝</div>
+                <h3>OCR文字识别</h3>
+                <p>对于扫描版PDF，系统使用OCR技术自动识别图像中的文字，支持中英文多语言识别。</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🧠</div>
+                <h3>智能文本向量化</h3>
+                <p>文本提取后，系统会自动将内容分块并存入向量数据库，以便AI能够精确定位和回答问题。</p>
+            </div>
+        </div>
+    </div>
+    
+    <footer class="footer">
+        <p>© 2025 智能文档问答系统 - 基于Spring AI构建</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const loading = document.getElementById('loading');
+            const resultArea = document.getElementById('resultArea');
+            const resultText = document.getElementById('resultText');
+            const fileInfo = document.getElementById('fileInfo');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            const goToChatBtn = document.getElementById('goToChatBtn');
+            
+            // 前往聊天页面
+            goToChatBtn.addEventListener('click', function() {
+                window.location.href = 'chat.html';
+            });
+            
+            // 点击上传区域，触发文件选择
+            uploadArea.addEventListener('click', function() {
+                fileInput.click();
+            });
+            
+            // 点击上传按钮，触发文件选择
+            uploadBtn.addEventListener('click', function(e) {
+                e.stopPropagation(); // 防止事件冒泡到uploadArea
+                fileInput.click();
+            });
+            
+            // 监听文件选择变化
+            fileInput.addEventListener('change', function() {
+                if (fileInput.files.length > 0) {
+                    uploadFile(fileInput.files[0]);
+                }
+            });
+            
+            // 拖放相关事件
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight() {
+                uploadArea.classList.add('highlight');
+            }
+            
+            function unhighlight() {
+                uploadArea.classList.remove('highlight');
+            }
+            
+            // 处理拖放的文件
+            uploadArea.addEventListener('drop', function(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length > 0) {
+                    uploadFile(files[0]);
+                }
+            });
+            
+            // 上传文件的函数
+            function uploadFile(file) {
+                // 清除之前的提示和结果
+                errorMessage.style.display = 'none';
+                successMessage.style.display = 'none';
+                resultArea.style.display = 'none';
+                
+                // 检查是否为PDF文件
+                if (file.type !== 'application/pdf') {
+                    showError('只支持PDF文件');
+                    return;
+                }
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                // 显示加载中状态
+                loading.style.display = 'block';
+                
+                // 发送请求
+                fetch('/api/pdf/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.message || '文件处理失败');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // 处理成功，显示结果
+                    loading.style.display = 'none';
+                    resultArea.style.display = 'block';
+                    
+                    // 显示文件信息
+                    const fileSize = formatFileSize(data.fileSize);
+                    fileInfo.innerHTML = `
+                        <strong>文件名:</strong> ${data.fileName}<br>
+                        <strong>文件大小:</strong> ${fileSize}<br>
+                        <strong>处理方式:</strong> ${data.processingMethod === 'OCR' ? 'OCR文字识别' : '文本提取'}<br>
+                        <strong>提取文本长度:</strong> ${data.textLength} 字符<br>
+                        <strong>向量化状态:</strong> ${data.vectorized ? '<span style="color:green">已存入向量数据库</span>' : '<span style="color:red">未向量化</span>'}
+                    `;
+                    
+                    // 显示提取的文本预览（最多显示500个字符）
+                    let textPreview = data.text;
+                    if (textPreview.length > 1000) {
+                        textPreview = textPreview.substring(0, 1000) + '... (只显示前1000个字符)';
+                    }
+                    resultText.textContent = textPreview;
+                    
+                    // 上传成功后，显示成功消息
+                    if (data.vectorized) {
+                        showSuccess(`文件 "${data.fileName}" 已成功上传并向量化，现在您可以前往聊天页面提问关于此文档的问题。`);
+                    }
+                })
+                .catch(error => {
+                    // 处理错误
+                    loading.style.display = 'none';
+                    showError(error.message || '处理文件时出错');
+                });
+            }
+            
+            // 显示错误信息
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+            }
+            
+            // 显示成功信息
+            function showSuccess(message) {
+                successMessage.textContent = message;
+                successMessage.style.display = 'block';
+            }
+            
+            // 格式化文件大小
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+        });
+    </script>
+</body>
+</html> 
